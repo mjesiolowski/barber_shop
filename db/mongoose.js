@@ -17,7 +17,7 @@ mongoose.connect('mongodb://127.0.0.1:27017/barber-shop-api', {
 
 const utcDate = new Date().toJSON().slice(0, 10).replace(/-/g, '/');
 
-const Barber = mongoose.model('Barber', {
+const barberSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -40,26 +40,27 @@ const Barber = mongoose.model('Barber', {
     trim: true,
     minlength: 10,
   },
-  availability: [{}],
 });
+
+barberSchema.virtual('availability', {
+  ref: 'Availability',
+  localField: '_id',
+  foreignField: 'author',
+});
+
+const Barber = mongoose.model('Barber', barberSchema);
 
 const Availability = mongoose.model('Availability', {
   date: Date,
+  author: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Barber',
+  },
   hours: [{
     hour: Number,
     status: String,
     clientName: String,
     serviceType: String,
-  }],
-});
-
-const availability1 = new Availability({
-  date: utcDate,
-  hours: [{
-    hour: 800,
-    status: 'occupied',
-    clientName: 'John Dee',
-    serviceType: 'combo',
   }],
 });
 
@@ -76,45 +77,28 @@ const availability1 = new Availability({
 const barber1 = new Barber({
   name: 'barber1',
   email: 'barber1@barber-shop.pl',
-  password: 'test',
-  availability: [
-    {
-      [utcDate]: {
-        800: {
-          status: 'occupied',
-          clientName: 'John Dee',
-          serviceType: 'combo',
-        },
-      },
-    },
-    {
-      [utcDate]: {
-        830: {
-          status: 'occupied',
-          clientName: 'John Dee',
-          serviceType: 'combo',
-        },
-      },
-    },
-  ],
+  password: 'test123456',
+  // eslint-disable-next-line
+  // availability: availability1._id,
 });
 
-// availability1.save()
+const availability1 = new Availability({
+  date: utcDate,
+  // eslint-disable-next-line
+  author: barber1._id,
+  hours: [{
+    hour: 800,
+    status: 'occupied',
+    clientName: 'John Dee',
+    serviceType: 'combo',
+  }],
+});
+
+
+// barber1.save()
 //   .then((e) => console.log('saved: ', e))
 //   .catch((e) => console.log(e));
 
-// Availability.findOneAndUpdate(
-//   { date: utcDate },
-//   {
-//     $push: {
-//       hours: {
-//         hour: 830,
-//         status: 'occupied',
-//         clientName: 'John Dee',
-//         serviceType: 'combo',
-//       },
-//     },
-//   },
-// )
-//   .then((resp) => console.log(resp))
+// availability1.save()
+//   .then((e) => console.log('saved: ', e))
 //   .catch((e) => console.log(e));
