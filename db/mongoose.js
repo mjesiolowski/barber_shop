@@ -42,6 +42,27 @@ const barberSchema = new mongoose.Schema({
   },
 });
 
+const availabilitySchema = new mongoose.Schema({
+  author: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Barber',
+    required: true,
+  },
+  date: {
+    type: Date,
+    required: true,
+  },
+  hours: [{
+    hour: {
+      type: Number,
+      required: true,
+    },
+    status: String,
+    clientName: String,
+    serviceType: String,
+  }],
+});
+
 barberSchema.virtual('availability', {
   ref: 'Availability',
   localField: '_id',
@@ -50,19 +71,7 @@ barberSchema.virtual('availability', {
 
 const Barber = mongoose.model('Barber', barberSchema);
 
-const Availability = mongoose.model('Availability', {
-  date: Date,
-  author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Barber',
-  },
-  hours: [{
-    hour: Number,
-    status: String,
-    clientName: String,
-    serviceType: String,
-  }],
-});
+const Availability = mongoose.model('Availability', availabilitySchema);
 
 // const availability2 = new Availability({
 //   date: utcDate,
