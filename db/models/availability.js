@@ -6,21 +6,23 @@ const availabilitySchema = new mongoose.Schema({
     ref: 'Barber',
     required: true,
   },
-  date: {
+  month: {
     type: Date,
     required: true,
   },
-  hours: [{
-    hour: {
-      type: Number,
-      required: true,
-    },
-    status: String,
-    clientName: String,
-    serviceType: String,
+  availability: [{
+    day: Number,
+    hours: [{
+      hour: {
+        type: Number,
+        required: true,
+      },
+      status: String,
+      clientName: String,
+      serviceType: String,
+    }],
   }],
 });
-
 
 const Availability = mongoose.model('Availability', availabilitySchema);
 
