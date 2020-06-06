@@ -2,7 +2,7 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 require('../db/mongoose');
-const moment = require('moment');
+const mongoose = require('mongoose');
 const Barber = require('../db/models/barber');
 const Availability = require('../db/models/availability');
 
@@ -56,7 +56,7 @@ app.post('/availability', async (req, res) => {
   // console.log({ isMonthInDatabse: isMonthInDatabase, isDayInDatabase, isHourInDatabase });
   try {
     // if (!isMonthInDatabase.length) {
-    //   await availability.save();
+    // await availability.save();
     //   return res.send(availability);
     // }
 
@@ -79,11 +79,11 @@ app.post('/availability', async (req, res) => {
     //   { $and: [{ 'availability.hours.hour': '800' }, { 'availability.day': 8 }] },
     // );
 
-    const isHourInDatabase = await Availability.find({ availability: { $elemMatch: { day: 6, 'hours.hour': 800 } } });
+    const isHourInDatabase = await Availability.find({ availability: { $elemMatch: { day: 8, 'hours.hour': 1000 } } });
     console.log(isHourInDatabase);
     // if (!isHourInDatabase.length)
 
-    res.status(403).send('date in database');
+
     // console.log({ isMonthInDatabse, isDayInDatabase, isHourInDatabase });
     // const update = await Availability.findOneAndUpdate(
     //   { month: 6 },
@@ -105,14 +105,33 @@ app.post('/availability', async (req, res) => {
     // });
 
     // UPDATE GENERAL
-    // const update = await Availability.findOneAndUpdate({ month: 6 },
+    // const update = await Availability.findOneAndUpdate({ availability: { $elemMatch: { day: 6, 'hours.hour': 930 } } },
+    // {
+    //   $set: {
+    //     'availability.$.hours.0.status': 'UPDATE_TEST',
+    //   },
+    // },
+    // { new: true }
+    // );
+
+    // const update = await Availability.update(
+    //   { month: 6 },
     //   {
     //     $set: {
-    //       'availability.0.hours.0.status': 'UPDATE_TEST',
+    //       'availability.$[e1].hours.$[e2].status': 'KUMITSU',
     //     },
     //   },
-    //   { new: true });
+    //   {
+    //     arrayFilters: [
+    //       { 'e1._id': mongoose.Types.ObjectId('5edbae1c7e60cc05a496d444') },
+    //       { 'e2._id': mongoose.Types.ObjectId('5edbae1c7e60cc05a496d446') },
+    //     ],
+    //   },
+    // );
 
+
+    console.log(update);
+    res.status(403).send('date in database');
     // const update = await Availability.findOneAndUpdate({ month: 6, 'availability.0.day': 6 },
     //   {
     //     $push: {
@@ -125,7 +144,6 @@ app.post('/availability', async (req, res) => {
     //     },
     //   },
     //   { new: true });
-
 
     // console.log(update);
     // res.send('succesfully updated');
