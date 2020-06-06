@@ -29,58 +29,74 @@ app.post('/barbers', async (req, res) => {
 
 app.post('/availability', async (req, res) => {
   const { body } = req;
-  const { month, day, hours } = body;
+  const { month, day, hour: hourFromQuery } = body;
 
 
   const availability = new Availability({
     author: '5edb720e3f15092ab0919332',
     month,
-    availability: {
-      day,
-      hours,
-    },
+    day,
+    hours: [
+      hourFromQuery,
+    ],
   });
 
   // console.log({ month, day, hours });
   // console.log('moment: ', moment(date).format('DD-MM-YYYY'));
   // res.send('good');
 
-  const isMonthInDatabase = await Availability.find({ month });
-  const isDayInDatabase = await Availability.find(
-    { 'availability.day': day },
+  const isDateInDatabase = await Availability.find(
+    { month, day },
   );
-  // const isHourInDatabase = await Availability.find(
-  //   { 'availability.hours.hour': 930 },
-  // );
 
-  // console.log({ isMonthInDatabse: isMonthInDatabase, isDayInDatabase, isHourInDatabase });
+  const isHourInDatabase = await Availability.find(
+    { month, day, 'hours.hour': hourFromQuery.hour },
+  );
+
+  const isHourReadyToUpdate = await Availability.find(
+    {
+      month, day, 'hours.hour': hourFromQuery.hour, 'hours.status': 'READY',
+    },
+  );
+
+
+  console.log({ isHourInDatabase });
   try {
-    // if (!isMonthInDatabase.length) {
-    // await availability.save();
-    //   return res.send(availability);
-    // }
+    if (!isDateInDatabase.length) {
+      await availability.save();
+      return res.send(availability);
+    }
 
-    // if (!isDayInDatabase.length) {
-    //   const update = await Availability.findOneAndUpdate(
-    //     { month },
-    //     {
-    //       $push: {
-    //         availability: {
-    //           day,
-    //           hours,
-    //         },
-    //       },
-    //     },
-    //   );
-    //   return res.send(update);
-    // }
+    if (!isHourInDatabase.length) {
+      const push = await Availability.findOneAndUpdate(
+        { month, day },
+        {
+          $push: { hours: hourFromQuery },
+        },
+        { new: true },
+      );
+      return res.send(push);
+    }
+
+    if (isHourReadyToUpdate.length) {
+      const update = await Availability.findOneAndUpdate(
+        {
+          month, day, 'hours.hour': hourFromQuery.hour, 'hours.status': 'READY',
+        },
+        {
+          $set: { 'hours.$': hourFromQuery },
+        },
+        { new: true },
+      );
+      return res.send(update);
+    }
 
     // const isHourInDatabase = await Availability.find(
     //   { $and: [{ 'availability.hours.hour': '800' }, { 'availability.day': 8 }] },
     // );
 
-    const isHourInDatabase = await Availability.find({ availability: { $elemMatch: { day: 8, 'hours.hour': 1000 } } });
-    console.log(isHourInDatabase);
+    // const isHourInDatabase = await Availability.find({ availability: { $elemMatch: { day: 8, 'hours.hour': 1000 } } });
+    // console.log(isHourInDatabase);
     // if (!isHourInDatabase.length)
 
 
@@ -105,14 +121,13 @@ app.post('/availability', async (req, res) => {
     // });
 
     // UPDATE GENERAL
-    // const update = await Availability.findOneAndUpdate({ availability: { $elemMatch: { day: 6, 'hours.hour': 930 } } },
-    // {
-    //   $set: {
-    //     'availability.$.hours.0.status': 'UPDATE_TEST',
+    // const update = await Availability.findOneAndUpdate({ day: 6, 'hours.hour': 930 },
+    //   {
+    //     $set: {
+    //       'hours.$.status': 'UPDATE_TEST',
+    //     },
     //   },
-    // },
-    // { new: true }
-    // );
+    //   { new: true });
 
     // const update = await Availability.update(
     //   { month: 6 },
@@ -130,8 +145,8 @@ app.post('/availability', async (req, res) => {
     // );
 
 
-    console.log(update);
-    res.status(403).send('date in database');
+    // console.log(update);
+    res.status(403).send(isHourInDatabase);
     // const update = await Availability.findOneAndUpdate({ month: 6, 'availability.0.day': 6 },
     //   {
     //     $push: {

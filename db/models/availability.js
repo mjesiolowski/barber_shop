@@ -10,20 +10,18 @@ const availabilitySchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  availability: [{
-    day: {
+  day: {
+    type: Number,
+    required: true,
+  },
+  hours: [{
+    hour: {
       type: Number,
       required: true,
     },
-    hours: [{
-      hour: {
-        type: Number,
-        required: true,
-      },
-      status: String,
-      clientName: String,
-      serviceType: String,
-    }],
+    status: String,
+    clientName: String,
+    serviceType: String,
   }],
 });
 
