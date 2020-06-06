@@ -7,11 +7,14 @@ const availabilitySchema = new mongoose.Schema({
     required: true,
   },
   month: {
-    type: Date,
+    type: Number,
     required: true,
   },
   availability: [{
-    day: Number,
+    day: {
+      type: Number,
+      required: true,
+    },
     hours: [{
       hour: {
         type: Number,
