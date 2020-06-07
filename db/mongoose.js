@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const validator = require('validator');
+const Barber = require('./models/barber');
+const Availability = require('./models/availability');
 
 mongoose.connect('mongodb://127.0.0.1:27017/barber-shop-api', {
   useNewUrlParser: true,
@@ -14,64 +15,7 @@ mongoose.connect('mongodb://127.0.0.1:27017/barber-shop-api', {
     console.log(`DB error: ${e}`);
   });
 
-
 const utcDate = new Date().toJSON().slice(0, 10).replace(/-/g, '/');
-
-const barberSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    trim: true,
-    lowercase: true,
-    validate(value) {
-      if (!validator.isEmail(value)) {
-        throw new Error('Email is invalid');
-      }
-    },
-  },
-  password: {
-    type: String,
-    required: true,
-    trim: true,
-    minlength: 10,
-  },
-});
-
-const availabilitySchema = new mongoose.Schema({
-  author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Barber',
-    required: true,
-  },
-  date: {
-    type: Date,
-    required: true,
-  },
-  hours: [{
-    hour: {
-      type: Number,
-      required: true,
-    },
-    status: String,
-    clientName: String,
-    serviceType: String,
-  }],
-});
-
-barberSchema.virtual('availability', {
-  ref: 'Availability',
-  localField: '_id',
-  foreignField: 'author',
-});
-
-const Barber = mongoose.model('Barber', barberSchema);
-
-const Availability = mongoose.model('Availability', availabilitySchema);
 
 // const availability2 = new Availability({
 //   date: utcDate,
@@ -84,7 +28,7 @@ const Availability = mongoose.model('Availability', availabilitySchema);
 // });
 
 const barber1 = new Barber({
-  name: 'barber1',
+  name: 'Import',
   email: 'barber1@barber-shop.pl',
   password: 'test123456',
   // eslint-disable-next-line
