@@ -14,13 +14,31 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(publicPath));
 
+const validateHourValue = (value) => {
+  if (!validator.isInt(value, { min: 0, max: 1440 })) {
+    return false;
+  }
+
+  return true;
+};
+const validateHourStatus = (value) => {
+  if (!['READY', 'OCCUPIED'].some((element) => element === value)) {
+    return false;
+  }
+
+  return true;
+};
+
 app.get('/barber/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
     const barber = await Barber.findById(id);
-    await barber.populate('availability').execPopulate();
+    if (!barber) {
+      return res.status(404).send('barber not found');
+    }
 
+    await barber.populate('availability').execPopulate();
     res.send(barber);
   } catch (e) {
     res.status(500).send();
@@ -43,9 +61,9 @@ app.post('/barbers', async (req, res) => {
 
   try {
     await barber.save();
-    res.send(barber);
+    res.status(201).send(barber);
   } catch (e) {
-    res.status(400).send('couldn\'t create');
+    res.status(400).send(e);
   }
 });
 
@@ -112,6 +130,20 @@ app.delete('/availability', async (req, res) => {
   }
 });
 
+app.patch('/availability/:id', async (req, res) => {
+  try {
+    const availability = await Availability.findById(req.params.id);
+
+    if (!availability) {
+      return res.status(404).send();
+    }
+
+    res.send(availability);
+  } catch (e) {
+    res.status(500).send();
+  }
+});
+
 app.post('/availability', async (req, res) => {
   const { month, day, hours } = req.body;
 
@@ -124,33 +156,20 @@ app.post('/availability', async (req, res) => {
   const findDateInDatabase = await Availability.find(
     { month, day },
   );
-  const findHourInDatabase = await Availability.find(
-    { month, day, 'hours.hour': hours.hour },
-  );
-  const checkIfHourStatusIsReady = await Availability.find(
-    {
-      month, day, 'hours.hour': hours.hour, 'hours.status': 'READY',
-    },
-  );
+
+  // const findHourInDatabase = await Availability.find(
+  //   { month, day, 'hours.hour': hours.hour },
+  // );
+  // const checkIfHourStatusIsReady = await Availability.find(
+  //   {
+  //     month, day, 'hours.hour': hours.hour, 'hours.status': 'READY',
+  //   },
+  // );
 
   const isDateInDatabase = findDateInDatabase.length;
-  const isHourInDatabase = findHourInDatabase.length;
-  const isHourStatusReady = checkIfHourStatusIsReady.length;
+  // const isHourInDatabase = findHourInDatabase.length;
+  // const isHourStatusReady = checkIfHourStatusIsReady.length;
 
-  const validateHourValue = (value) => {
-    if (!validator.isInt(value, { min: 0, max: 1440 })) {
-      return false;
-    }
-
-    return true;
-  };
-  const validateHourStatus = (value) => {
-    if (!['READY', 'OCCUPIED'].some((element) => element === value)) {
-      return false;
-    }
-
-    return true;
-  };
 
   const isHourValidated = validateHourValue(hours.hour) && validateHourStatus(hours.status);
 
@@ -159,42 +178,43 @@ app.post('/availability', async (req, res) => {
       return res.status(403).send('hour value or status is invalid');
     }
 
-    if (!isDateInDatabase) {
-      await availability.save();
-      await populateAvailability();
-      return res.send(availability);
+    if (isDateInDatabase) {
+      return res.status(404).send('date already in database');
     }
 
-    if (!isHourInDatabase) {
-      const push = await Availability.findOneAndUpdate(
-        { month, day },
-        {
-          $push: { hours },
-        },
-        { new: true },
-      );
-      await populateAvailability();
-      return res.send(push);
-    }
+    await populateAvailability();
+    await availability.save();
+    res.status(201).send(availability);
 
-    if (isHourStatusReady) {
-      const update = await Availability.findOneAndUpdate(
-        {
-          month, day, 'hours.hour': hours.hour, 'hours.status': 'READY',
-        },
-        {
-          $set: { 'hours.$': hours },
-        },
-        { new: true },
-      );
-      await populateAvailability();
-      return res.send(update);
-    }
+    // if (!isHourInDatabase) {
+    //   const push = await Availability.findOneAndUpdate(
+    //     { month, day },
+    //     {
+    //       $push: { hours },
+    //     },
+    //     { new: true },
+    //   );
+    //   await populateAvailability();
+    //   return res.send(push);
+    // }
 
-    res.status(403).send('date already in database');
+    // if (isHourStatusReady) {
+    //   const update = await Availability.findOneAndUpdate(
+    //     {
+    //       month, day, 'hours.hour': hours.hour, 'hours.status': 'READY',
+    //     },
+    //     {
+    //       $set: { 'hours.$': hours },
+    //     },
+    //     { new: true },
+    //   );
+    //   await populateAvailability();
+    //   return res.send(update);
+    // }
+
+    // res.status(403).send('date already in database');
   } catch (e) {
-    res.status(400);
-    res.send(e);
+    res.status(500).send(e);
   }
 });
 
