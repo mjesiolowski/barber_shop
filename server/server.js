@@ -14,6 +14,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(publicPath));
 
+app.get('/barber/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const barber = await Barber.findById(id);
+    await barber.populate('availability').execPopulate();
+
+    res.send(barber);
+  } catch (e) {
+    res.status(500).send();
+  }
+});
+
 app.get('/barbers', async (req, res) => {
   try {
     const barbers = await Barber.find({});
@@ -22,7 +35,6 @@ app.get('/barbers', async (req, res) => {
     res.status(500).send();
   }
 });
-
 
 app.post('/barbers', async (req, res) => {
   const { body } = req;
@@ -107,20 +119,14 @@ app.post('/availability', async (req, res) => {
 
   const populateAvailability = async () => {
     await availability.populate('author').execPopulate();
-    // console.log(availability);
-    const barber = await Barber.findById('5edb720e3f15092ab0919332');
-    await barber.populate('availability').execPopulate();
-    // console.log('found: ', barber.availability);
   };
 
   const findDateInDatabase = await Availability.find(
     { month, day },
   );
-
   const findHourInDatabase = await Availability.find(
     { month, day, 'hours.hour': hours.hour },
   );
-
   const checkIfHourStatusIsReady = await Availability.find(
     {
       month, day, 'hours.hour': hours.hour, 'hours.status': 'READY',
@@ -138,8 +144,7 @@ app.post('/availability', async (req, res) => {
 
     return true;
   };
-
-  const validateHourSatus = (value) => {
+  const validateHourStatus = (value) => {
     if (!['READY', 'OCCUPIED'].some((element) => element === value)) {
       return false;
     }
@@ -147,9 +152,7 @@ app.post('/availability', async (req, res) => {
     return true;
   };
 
-  const isHourValidated = validateHourValue(hours.hour) && validateHourSatus(hours.status);
-
-  console.log({ isHourValidated });
+  const isHourValidated = validateHourValue(hours.hour) && validateHourStatus(hours.status);
 
   try {
     if (!isHourValidated) {
