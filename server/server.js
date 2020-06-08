@@ -14,6 +14,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(publicPath));
 
+app.get('/barbers', async (req, res) => {
+  try {
+    const barbers = await Barber.find({});
+    res.send(barbers);
+  } catch (e) {
+    res.status(500).send();
+  }
+});
+
+
 app.post('/barbers', async (req, res) => {
   const { body } = req;
 
@@ -23,8 +33,7 @@ app.post('/barbers', async (req, res) => {
     await barber.save();
     res.send(barber);
   } catch (e) {
-    res.status(400);
-    res.send('couldn\'t create');
+    res.status(400).send('couldn\'t create');
   }
 });
 
