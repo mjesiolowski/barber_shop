@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 require('../db/mongoose');
 const mongoose = require('mongoose');
+const validator = require('validator');
 const Barber = require('../db/models/barber');
 const Availability = require('../db/models/availability');
 
@@ -70,41 +71,68 @@ app.delete('/availability', async (req, res) => {
 });
 
 app.post('/availability', async (req, res) => {
-  const { body } = req;
-  const {
-    month, day, hours, author,
-  } = body;
+  const { month, day, hours } = req.body;
 
-  const availability = new Availability({
-    author: mongoose.Types.ObjectId(author),
-    month,
-    day,
-    hours: [
-      hours,
-    ],
-  });
+  const availability = new Availability(req.body);
 
-  const isDateInDatabase = await Availability.find(
+  const populateAvailability = async () => {
+    await availability.populate('author').execPopulate();
+    // console.log(availability);
+    const barber = await Barber.findById('5edb720e3f15092ab0919332');
+    await barber.populate('availability').execPopulate();
+    // console.log('found: ', barber.availability);
+  };
+
+  const findDateInDatabase = await Availability.find(
     { month, day },
   );
 
-  const isHourInDatabase = await Availability.find(
+  const findHourInDatabase = await Availability.find(
     { month, day, 'hours.hour': hours.hour },
   );
 
-  const isHourReadyToUpdate = await Availability.find(
+  const checkIfHourStatusIsReady = await Availability.find(
     {
       month, day, 'hours.hour': hours.hour, 'hours.status': 'READY',
     },
   );
 
+  const isDateInDatabase = findDateInDatabase.length;
+  const isHourInDatabase = findHourInDatabase.length;
+  const isHourStatusReady = checkIfHourStatusIsReady.length;
+
+  const validateHourValue = (value) => {
+    if (!validator.isInt(value, { min: 0, max: 1440 })) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateHourSatus = (value) => {
+    if (!['READY', 'OCCUPIED'].some((element) => element === value)) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const isHourValidated = validateHourValue(hours.hour) && validateHourSatus(hours.status);
+
+  console.log({ isHourValidated });
+
   try {
-    if (!isDateInDatabase.length) {
+    if (!isHourValidated) {
+      return res.status(403).send('hour value or status is invalid');
+    }
+
+    if (!isDateInDatabase) {
       await availability.save();
+      await populateAvailability();
       return res.send(availability);
     }
 
-    if (!isHourInDatabase.length) {
+    if (!isHourInDatabase) {
       const push = await Availability.findOneAndUpdate(
         { month, day },
         {
@@ -112,10 +140,11 @@ app.post('/availability', async (req, res) => {
         },
         { new: true },
       );
+      await populateAvailability();
       return res.send(push);
     }
 
-    if (isHourReadyToUpdate.length) {
+    if (isHourStatusReady) {
       const update = await Availability.findOneAndUpdate(
         {
           month, day, 'hours.hour': hours.hour, 'hours.status': 'READY',
@@ -125,6 +154,7 @@ app.post('/availability', async (req, res) => {
         },
         { new: true },
       );
+      await populateAvailability();
       return res.send(update);
     }
 
