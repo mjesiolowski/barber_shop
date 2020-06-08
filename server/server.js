@@ -37,20 +37,41 @@ app.post('/barbers', async (req, res) => {
   }
 });
 
-app.get('/availability', async (req, res) => {
-  const { body } = req;
-  const { month, day, author } = body;
+app.get('/all_availability', async (req, res) => {
+  const { author } = req.body;
 
   try {
-    const document = await Availability.find(
+    const findBarberAvailability = await Availability.find(
+      { author: mongoose.Types.ObjectId(author) }, 'month day hours',
+    );
+
+    const isBarberAvailabilityFound = findBarberAvailability.length;
+
+    if (!isBarberAvailabilityFound) {
+      return res.status(404).send({ error: 'Couldn\'t find the barber availability' });
+    }
+
+    res.send(findBarberAvailability);
+  } catch (e) {
+    res.status(404).send(e);
+  }
+});
+
+app.get('/availability', async (req, res) => {
+  const { month, day, author } = req.body;
+
+  try {
+    const findBarberAvailability = await Availability.find(
       { month, day, author: mongoose.Types.ObjectId(author) }, 'hours',
     );
 
-    if (!document.length) {
+    const isDataAvailable = findBarberAvailability.length;
+
+    if (!isDataAvailable) {
       return res.status(404).send({ error: 'Couldn\'t find the date' });
     }
 
-    res.send(document);
+    res.send(findBarberAvailability);
   } catch (e) {
     res.status(404).send(e);
   }
