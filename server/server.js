@@ -150,8 +150,7 @@ app.patch('/availability/:id', async (req, res) => {
     }
 
     if (!isHourInDatabase) {
-      const push = await Availability.findOneAndUpdate(
-        { month, day },
+      const push = await availability.updateOne(
         {
           $push: { hours: req.body },
         },
@@ -164,14 +163,13 @@ app.patch('/availability/:id', async (req, res) => {
     if (isHourStatusReady) {
       const update = await Availability.findOneAndUpdate(
         {
-          month, day, 'hours.hour': hourFromQuery, 'hours.status': 'READY',
+          month, day, 'hours.hour': hourFromQuery,
         },
         {
           $set: { 'hours.$': req.body },
         },
         { new: true, runValidators: true },
       );
-
       return res.status(201).send(update);
     }
 
