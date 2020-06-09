@@ -132,13 +132,50 @@ app.delete('/availability', async (req, res) => {
 
 app.patch('/availability/:id', async (req, res) => {
   try {
+    const { hour: hourFromQuery, status: statusFromQuery } = req.body;
+
     const availability = await Availability.findById(req.params.id);
+    const { day, month } = availability;
+
+    const isHourInDatabase = availability.hours.some(({ hour }) => hour === hourFromQuery);
+    const isHourStatusReady = Boolean(availability.hours.filter(({ hour, status }) => hour === hourFromQuery && status === 'READY').length);
+    const isHourValidated = validateHourValue(hourFromQuery) && validateHourStatus(statusFromQuery);
 
     if (!availability) {
       return res.status(404).send();
     }
 
-    res.send(availability);
+    if (!isHourValidated) {
+      return res.status(403).send('hour value or status is invalid');
+    }
+
+    if (!isHourInDatabase) {
+      const push = await Availability.findOneAndUpdate(
+        { month, day },
+        {
+          $push: { hours: req.body },
+        },
+        { new: true },
+      );
+
+      return res.status(201).send(push);
+    }
+
+    if (isHourStatusReady) {
+      const update = await Availability.findOneAndUpdate(
+        {
+          month, day, 'hours.hour': hourFromQuery, 'hours.status': 'READY',
+        },
+        {
+          $set: { 'hours.$': req.body },
+        },
+        { new: true },
+      );
+
+      return res.status(201).send(update);
+    }
+
+    res.status(403).send('hour already in databse');
   } catch (e) {
     res.status(500).send();
   }
@@ -146,32 +183,20 @@ app.patch('/availability/:id', async (req, res) => {
 
 app.post('/availability', async (req, res) => {
   const { month, day, hours } = req.body;
+  const { hour, status } = hours;
 
   const availability = new Availability(req.body);
 
-  const populateAvailability = async () => {
-    await availability.populate('author').execPopulate();
-  };
+  // const populateAvailability = async () => {
+  //   await availability.populate('author').execPopulate();
+  // };
 
   const findDateInDatabase = await Availability.find(
     { month, day },
   );
 
-  // const findHourInDatabase = await Availability.find(
-  //   { month, day, 'hours.hour': hours.hour },
-  // );
-  // const checkIfHourStatusIsReady = await Availability.find(
-  //   {
-  //     month, day, 'hours.hour': hours.hour, 'hours.status': 'READY',
-  //   },
-  // );
-
   const isDateInDatabase = findDateInDatabase.length;
-  // const isHourInDatabase = findHourInDatabase.length;
-  // const isHourStatusReady = checkIfHourStatusIsReady.length;
-
-
-  const isHourValidated = validateHourValue(hours.hour) && validateHourStatus(hours.status);
+  const isHourValidated = validateHourValue(hour) && validateHourStatus(status);
 
   try {
     if (!isHourValidated) {
@@ -182,37 +207,9 @@ app.post('/availability', async (req, res) => {
       return res.status(404).send('date already in database');
     }
 
-    await populateAvailability();
+    // await populateAvailability();
     await availability.save();
     res.status(201).send(availability);
-
-    // if (!isHourInDatabase) {
-    //   const push = await Availability.findOneAndUpdate(
-    //     { month, day },
-    //     {
-    //       $push: { hours },
-    //     },
-    //     { new: true },
-    //   );
-    //   await populateAvailability();
-    //   return res.send(push);
-    // }
-
-    // if (isHourStatusReady) {
-    //   const update = await Availability.findOneAndUpdate(
-    //     {
-    //       month, day, 'hours.hour': hours.hour, 'hours.status': 'READY',
-    //     },
-    //     {
-    //       $set: { 'hours.$': hours },
-    //     },
-    //     { new: true },
-    //   );
-    //   await populateAvailability();
-    //   return res.send(update);
-    // }
-
-    // res.status(403).send('date already in database');
   } catch (e) {
     res.status(500).send(e);
   }
