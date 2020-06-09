@@ -35,7 +35,7 @@ app.get('/barber/:id', async (req, res) => {
 
     const barber = await Barber.findById(id);
     if (!barber) {
-      return res.status(404).send('barber not found');
+      return res.status(404).send({ error: 'barber not found' });
     }
 
     await barber.populate('availability').execPopulate();
@@ -63,7 +63,7 @@ app.post('/barbers', async (req, res) => {
     await barber.save();
     res.status(201).send(barber);
   } catch (e) {
-    res.status(400).send(e);
+    res.status(500).send();
   }
 });
 
@@ -83,7 +83,7 @@ app.get('/all_availability', async (req, res) => {
 
     res.send(findBarberAvailability);
   } catch (e) {
-    res.status(404).send(e);
+    res.status(500).send();
   }
 });
 
@@ -103,7 +103,7 @@ app.get('/availability', async (req, res) => {
 
     res.send(findBarberAvailability);
   } catch (e) {
-    res.status(404).send(e);
+    res.status(500).send();
   }
 });
 
@@ -126,7 +126,7 @@ app.delete('/availability', async (req, res) => {
 
     res.send(document);
   } catch (e) {
-    res.status(404).send(e);
+    res.status(500).send();
   }
 });
 
@@ -142,11 +142,11 @@ app.patch('/availability/:id', async (req, res) => {
     const isHourValidated = validateHourValue(hourFromQuery) && validateHourStatus(statusFromQuery);
 
     if (!availability) {
-      return res.status(404).send();
+      return res.status(404).send({ error: 'availability not found' });
     }
 
     if (!isHourValidated) {
-      return res.status(403).send('hour value or status is invalid');
+      return res.status(403).send({ error: 'hour value or status is invalid' });
     }
 
     if (!isHourInDatabase) {
@@ -155,7 +155,7 @@ app.patch('/availability/:id', async (req, res) => {
         {
           $push: { hours: req.body },
         },
-        { new: true },
+        { new: true, runValidators: true },
       );
 
       return res.status(201).send(push);
@@ -169,13 +169,13 @@ app.patch('/availability/:id', async (req, res) => {
         {
           $set: { 'hours.$': req.body },
         },
-        { new: true },
+        { new: true, runValidators: true },
       );
 
       return res.status(201).send(update);
     }
 
-    res.status(403).send('hour already in databse');
+    res.status(403).send({ error: 'hour already in databse' });
   } catch (e) {
     res.status(500).send();
   }
@@ -200,18 +200,18 @@ app.post('/availability', async (req, res) => {
 
   try {
     if (!isHourValidated) {
-      return res.status(403).send('hour value or status is invalid');
+      return res.status(403).send({ error: 'hour value or status is invalid' });
     }
 
     if (isDateInDatabase) {
-      return res.status(404).send('date already in database');
+      return res.status(403).send({ error: 'date already in database' });
     }
 
     // await populateAvailability();
     await availability.save();
     res.status(201).send(availability);
   } catch (e) {
-    res.status(500).send(e);
+    res.status(500).send();
   }
 });
 

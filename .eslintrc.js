@@ -8,6 +8,7 @@ module.exports = {
   "rules": {
     "linebreak-style": 0,
     "global-require": 0,
+    "consistent-return": "off",
     "eslint linebreak-style": [0, "error", "windows"],
     "import/prefer-default-export": "off",
     "react/jsx-uses-react": "error",
