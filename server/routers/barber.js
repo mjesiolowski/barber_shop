@@ -37,7 +37,18 @@ router.post('/barbers', async (req, res) => {
     await barber.save();
     res.status(201).send(barber);
   } catch (e) {
-    res.status(500).send();
+    res.status(500).send(e);
+  }
+});
+
+router.post('/barbers/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const barber = await Barber.findByCredentials(email, password);
+    res.send(barber);
+  } catch (e) {
+    res.status(400).send();
   }
 });
 

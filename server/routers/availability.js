@@ -7,7 +7,7 @@ const { validateHourStatus, validateHourValue } = validateHour;
 
 const router = new express.Router();
 
-router.get('/all_availability', async (req, res) => {
+router.get('/all_availabilities', async (req, res) => {
   const { author } = req.body;
 
   try {
