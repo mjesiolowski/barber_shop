@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const validator = require('validator');
 
 const availabilitySchema = new mongoose.Schema({
   author: {
@@ -7,19 +8,42 @@ const availabilitySchema = new mongoose.Schema({
     required: true,
   },
   month: {
-    type: Number,
+    type: String,
     required: true,
+    validate(value) {
+      if (!validator.isInt(value, { min: 1, max: 12 })) {
+        throw new Error('Month is invalid');
+      }
+    },
   },
   day: {
-    type: Number,
+    type: String,
     required: true,
+    validate(value) {
+      if (!validator.isInt(value, { min: 1, max: 31 })) {
+        throw new Error('Day is invalid');
+      }
+    },
   },
   hours: [{
     hour: {
-      type: Number,
+      type: String,
       required: true,
+      validate(value) {
+        if (!validator.isInt(value, { min: 0, max: 1440 })) {
+          throw new Error('Hour is invalid');
+        }
+      },
     },
-    status: String,
+    status: {
+      type: String,
+      required: true,
+      validate(value) {
+        if (!['READY', 'OCCUPIED'].some((element) => element === value)) {
+          throw new Error('Status is invalid');
+        }
+      },
+    },
     clientName: String,
     serviceType: String,
   }],
