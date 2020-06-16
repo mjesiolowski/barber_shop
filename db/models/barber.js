@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const barberSchema = new mongoose.Schema({
   name: {
@@ -26,6 +27,12 @@ const barberSchema = new mongoose.Schema({
     trim: true,
     minlength: 10,
   },
+  tokens: [{
+    token: {
+      type: String,
+      required: true,
+    },
+  }],
 });
 
 barberSchema.virtual('availability', {
@@ -33,6 +40,17 @@ barberSchema.virtual('availability', {
   localField: '_id',
   foreignField: 'author',
 });
+
+barberSchema.methods.generateToken = async function () {
+  const barber = this;
+
+  const token = jwt.sign({ _id: barber.id.toString() }, 'testsecret');
+
+  barber.tokens = [...barber.tokens, { token }];
+  await barber.save();
+
+  return token;
+};
 
 barberSchema.statics.findByCredentials = async (email, password) => {
   // eslint-disable-next-line no-use-before-define

@@ -1,5 +1,6 @@
 const express = require('express');
 const Barber = require('../../db/models/barber');
+const auth = require('../middleware/auth');
 
 const router = new express.Router();
 
@@ -19,9 +20,13 @@ router.get('/barber/:id', async (req, res) => {
   }
 });
 
+router.get('/barbers/me', auth, async (req, res) => {
+  res.send(req.barber);
+});
+
 router.get('/barbers', async (req, res) => {
   try {
-    const barbers = await Barber.find({});
+    const barbers = await Barber.find({}, '_id');
     res.send(barbers);
   } catch (e) {
     res.status(500).send();
@@ -35,7 +40,8 @@ router.post('/barbers', async (req, res) => {
 
   try {
     await barber.save();
-    res.status(201).send(barber);
+    const token = await barber.generateToken();
+    res.status(201).send({ barber, token });
   } catch (e) {
     res.status(500).send(e);
   }
@@ -46,7 +52,8 @@ router.post('/barbers/login', async (req, res) => {
 
   try {
     const barber = await Barber.findByCredentials(email, password);
-    res.send(barber);
+    const token = await barber.generateToken();
+    res.send({ barber, token });
   } catch (e) {
     res.status(400).send();
   }
