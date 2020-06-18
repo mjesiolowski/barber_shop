@@ -41,7 +41,7 @@ router.post('/barbers', async (req, res) => {
   try {
     await barber.save();
     const token = await barber.generateToken();
-    res.status(201).send({ barber, token });
+    res.status(201).send({ barber: barber.getPublicProfile(), token });
   } catch (e) {
     res.status(500).send(e);
   }
@@ -53,10 +53,33 @@ router.post('/barbers/login', async (req, res) => {
   try {
     const barber = await Barber.findByCredentials(email, password);
     const token = await barber.generateToken();
-    res.send({ barber, token });
+    res.send({ barber: barber.getPublicProfile(), token });
   } catch (e) {
     res.status(400).send();
   }
 });
+
+router.post('/barbers/logout', auth, async (req, res) => {
+  try {
+    req.barber.tokens = req.barber.tokens.filter((token) => token.token !== req.token);
+
+    await req.barber.save();
+    res.send();
+  } catch (e) {
+    res.status(500).send();
+  }
+});
+
+router.post('/barbers/logoutAll', auth, async (req, res) => {
+  try {
+    req.barber.tokens = [];
+
+    await req.barber.save();
+    res.send();
+  } catch (e) {
+    res.status(500).send();
+  }
+});
+
 
 module.exports = router;

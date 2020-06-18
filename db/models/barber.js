@@ -52,6 +52,17 @@ barberSchema.methods.generateToken = async function () {
   return token;
 };
 
+barberSchema.methods.toJSON = function () {
+  const barber = this;
+
+  const barberObject = barber.toObject();
+  delete barberObject.password;
+  delete barberObject.tokens;
+
+  return barberObject;
+};
+
+
 barberSchema.statics.findByCredentials = async (email, password) => {
   // eslint-disable-next-line no-use-before-define
   const barber = await Barber.findOne({ email });
