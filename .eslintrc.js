@@ -12,6 +12,7 @@ module.exports = {
     "prefer-arrow-callback": "off",
     "no-underscore-dangle": "off",
     "func-names": "off",
+    "no-return-assign": "off",
     "eslint linebreak-style": [0, "error", "windows"],
     "import/prefer-default-export": "off",
     "react/jsx-uses-react": "error",

@@ -52,7 +52,7 @@ barberSchema.methods.generateToken = async function () {
   return token;
 };
 
-barberSchema.methods.toJSON = function () {
+barberSchema.methods.getPublicProfile = function () {
   const barber = this;
 
   const barberObject = barber.toObject();

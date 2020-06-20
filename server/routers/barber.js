@@ -4,21 +4,21 @@ const auth = require('../middleware/auth');
 
 const router = new express.Router();
 
-router.get('/barber/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
+// router.get('/barber/:id', async (req, res) => {
+//   try {
+//     const { id } = req.params;
 
-    const barber = await Barber.findById(id);
-    if (!barber) {
-      return res.status(404).send({ error: 'barber not found' });
-    }
+//     const barber = await Barber.findById(id);
+//     if (!barber) {
+//       return res.status(404).send({ error: 'barber not found' });
+//     }
 
-    await barber.populate('availability').execPopulate();
-    res.send(barber);
-  } catch (e) {
-    res.status(500).send();
-  }
-});
+//     await barber.populate('availability').execPopulate();
+//     res.send(barber);
+//   } catch (e) {
+//     res.status(500).send();
+//   }
+// });
 
 router.get('/barbers/me', auth, async (req, res) => {
   res.send(req.barber);
@@ -76,6 +76,35 @@ router.post('/barbers/logoutAll', auth, async (req, res) => {
 
     await req.barber.save();
     res.send();
+  } catch (e) {
+    res.status(500).send();
+  }
+});
+
+router.patch('/barbers/me', auth, async (req, res) => {
+  const updateKeys = Object.keys(req.body);
+  const allowedUpdates = ['name', 'email', 'password'];
+  const isUpdateAllowed = updateKeys.every((key) => allowedUpdates.includes(key));
+
+  if (!isUpdateAllowed) {
+    return res.status(400).send({ error: 'Invalid updates!' });
+  }
+
+  try {
+    updateKeys.forEach((key) => req.barber[key] = req.body[key]);
+
+    await req.barber.save();
+    res.send(req.barber);
+  } catch (e) {
+    res.status(400).send(e);
+  }
+});
+
+router.delete('/barbers/me', auth, async (req, res) => {
+  try {
+    await req.barber.remove();
+
+    res.send(req.barber);
   } catch (e) {
     res.status(500).send();
   }
