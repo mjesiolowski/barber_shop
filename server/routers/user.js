@@ -72,6 +72,7 @@ router.post('/users/login', async (req, res) => {
   try {
     const user = await User.findByCredentials(email, password);
     const token = await user.generateToken();
+
     res.send({ user: user.getPublicProfile(), token });
   } catch (e) {
     res.status(400).send();
@@ -121,6 +122,10 @@ router.patch('/users/me', auth, async (req, res) => {
 
 router.delete('/users/me', auth, async (req, res) => {
   try {
+    if (req.user.isAdmin) {
+      return res.status(403).send({ error: 'admin cannot be removed' });
+    }
+
     await req.user.remove();
 
     res.send(req.user);
