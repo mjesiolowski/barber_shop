@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Availability = require('../../db/models/availability');
 const validateHour = require('../../utils/validation');
+const auth = require('../middleware/auth');
 
 const { validateHourStatus, validateHourValue } = validateHour;
 
@@ -11,17 +12,17 @@ router.get('/all_availabilities', async (req, res) => {
   const { author } = req.body;
 
   try {
-    const findBarberAvailability = await Availability.find(
-      { author: mongoose.Types.ObjectId(author) }, 'month day hours',
+    const findUserAvailability = await Availability.find(
+      { author: mongoose.Types.ObjectId(author) }, 'month day hours.status',
     );
 
-    const isBarberAvailabilityFound = findBarberAvailability.length;
+    const isUserAvailabilityFound = findUserAvailability.length;
 
-    if (!isBarberAvailabilityFound) {
-      return res.status(404).send({ error: 'Couldn\'t find the barber availability' });
+    if (!isUserAvailabilityFound) {
+      return res.status(404).send({ error: 'Couldn\'t find the user availability' });
     }
 
-    res.send(findBarberAvailability);
+    res.send(findUserAvailability);
   } catch (e) {
     res.status(500).send();
   }
@@ -31,32 +32,32 @@ router.get('/availability', async (req, res) => {
   const { month, day, author } = req.body;
 
   try {
-    const findBarberAvailability = await Availability.find(
-      { month, day, author: mongoose.Types.ObjectId(author) }, 'hours',
+    const findUserAvailability = await Availability.find(
+      { month, day, author: mongoose.Types.ObjectId(author) }, 'hours.status',
     );
 
-    const isDataAvailable = findBarberAvailability.length;
+    const isDataAvailable = findUserAvailability.length;
 
     if (!isDataAvailable) {
       return res.status(404).send({ error: 'Couldn\'t find the date' });
     }
 
-    res.send(findBarberAvailability);
+    res.send(findUserAvailability);
   } catch (e) {
     res.status(500).send();
   }
 });
 
-router.delete('/availability', async (req, res) => {
+router.delete('/availability', auth, async (req, res) => {
   const { body } = req;
   const {
-    month, day, author, hour,
+    month, day, hour,
   } = body;
 
   try {
     const document = await Availability.findOneAndUpdate(
       {
-        month, day, author: mongoose.Types.ObjectId(author),
+        month, day, author: req.user._id,
       },
       {
         $pull: { hours: { hour } },
@@ -119,15 +120,14 @@ router.patch('/availability/:id', async (req, res) => {
   }
 });
 
-router.post('/availability', async (req, res) => {
+router.post('/availability', auth, async (req, res) => {
   const { month, day, hours } = req.body;
   const { hour, status } = hours;
 
-  const availability = new Availability(req.body);
-
-  // const populateAvailability = async () => {
-  //   await availability.populate('author').execPopulate();
-  // };
+  const availability = new Availability({
+    ...req.body,
+    author: req.user._id,
+  });
 
   const findDateInDatabase = await Availability.find(
     { month, day },
@@ -145,7 +145,8 @@ router.post('/availability', async (req, res) => {
       return res.status(403).send({ error: 'date already in database' });
     }
 
-    // await populateAvailability();
+    // await availability.populate('author').execPopulate();
+    // console.log(availability);
     await availability.save();
     res.status(201).send(availability);
   } catch (e) {

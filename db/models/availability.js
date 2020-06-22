@@ -4,7 +4,7 @@ const validator = require('validator');
 const availabilitySchema = new mongoose.Schema({
   author: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Barber',
+    ref: 'User',
     required: true,
   },
   month: {
