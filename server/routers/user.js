@@ -33,8 +33,27 @@ router.get('/users/barbers', async (req, res) => {
   }
 });
 
-router.post('/users', async (req, res) => {
+router.post('/users/signup', async (req, res) => {
   const { body } = req;
+  const { isAdmin, isBarber } = body;
+
+  if (isAdmin) {
+    const findAdmins = await User.find({ isAdmin: true });
+    const adminCount = findAdmins.length;
+
+    if (adminCount === 1) {
+      return res.status(403).send({ error: 'maximum number of admins is 1' });
+    }
+  }
+
+  if (isBarber) {
+    const findBarbers = await User.find({ isBarber: true });
+    const barberCount = findBarbers.length;
+
+    if (barberCount === 5) {
+      return res.status(403).send({ error: 'maximum number of admins is 5' });
+    }
+  }
 
   const user = new User(body);
 
