@@ -4,7 +4,7 @@ const validator = require('validator');
 const availabilitySchema = new mongoose.Schema({
   author: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Barber',
+    ref: 'User',
     required: true,
   },
   month: {
@@ -39,7 +39,7 @@ const availabilitySchema = new mongoose.Schema({
       type: String,
       required: true,
       validate(value) {
-        if (!['READY', 'OCCUPIED'].some((element) => element === value)) {
+        if (!['READY', 'OCCUPIED', 'DELETED'].some((element) => element === value)) {
           throw new Error('Status is invalid');
         }
       },

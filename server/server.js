@@ -2,7 +2,7 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const availabilityRouter = require('./routers/availability');
-const barberRouter = require('./routers/barber');
+const userRouter = require('./routers/user');
 require('../db/mongoose');
 
 const app = express();
@@ -10,7 +10,7 @@ const publicPath = path.join(__dirname, '..', 'public');
 
 app.use(cors());
 app.use(express.json());
-app.use(barberRouter);
+app.use(userRouter);
 app.use(availabilityRouter);
 app.use(express.static(publicPath));
 
