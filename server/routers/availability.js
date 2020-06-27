@@ -9,11 +9,11 @@ const { validateHourStatus, validateHourValue } = validateHour;
 const router = new express.Router();
 
 router.get('/all_availabilities', async (req, res) => {
-  const { author } = req.body;
-
   try {
+    const { author } = req.body;
+
     const findUserAvailability = await Availability.find(
-      { author: mongoose.Types.ObjectId(author) }, 'month day hours.status',
+      { author: mongoose.Types.ObjectId(author) }, 'month day hours.status hours.hour',
     );
 
     const isUserAvailabilityFound = findUserAvailability.length;
@@ -29,9 +29,9 @@ router.get('/all_availabilities', async (req, res) => {
 });
 
 router.get('/availability', async (req, res) => {
-  const { month, day, author } = req.body;
-
   try {
+    const { month, day, author } = req.body;
+
     const findUserAvailability = await Availability.find(
       { month, day, author: mongoose.Types.ObjectId(author) }, 'hours.status',
     );
@@ -49,23 +49,28 @@ router.get('/availability', async (req, res) => {
 });
 
 router.delete('/availability', auth, async (req, res) => {
-  const { body } = req;
-  const {
-    month, day, hour,
-  } = body;
-
   try {
-    const document = await Availability.findOneAndUpdate(
+    const { body } = req;
+    const {
+      month, day, hour,
+    } = body;
+
+    const date = await Availability.findOneAndUpdate(
       {
-        month, day, author: req.user._id,
+        month, day, 'hours.hour': hour, author: req.user._id,
       },
       {
-        $pull: { hours: { hour } },
+        $set: { 'hours.$': { hour, status: 'DELETED' } },
       },
       { new: true },
     );
 
-    res.send(document);
+    const isDateFound = date !== null;
+    if (!isDateFound) {
+      return res.status(404).send();
+    }
+
+    res.status(201).send({ satus: 'deleted' });
   } catch (e) {
     res.status(500).send();
   }
@@ -121,22 +126,22 @@ router.patch('/availability/:id', async (req, res) => {
 });
 
 router.post('/availability', auth, async (req, res) => {
-  const { month, day, hours } = req.body;
-  const { hour, status } = hours;
-
-  const availability = new Availability({
-    ...req.body,
-    author: req.user._id,
-  });
-
-  const findDateInDatabase = await Availability.find(
-    { month, day },
-  );
-
-  const isDateInDatabase = findDateInDatabase.length;
-  const isHourValidated = validateHourValue(hour) && validateHourStatus(status);
-
   try {
+    const { month, day, hours } = req.body;
+    const { hour, status } = hours;
+
+    const availability = new Availability({
+      ...req.body,
+      author: req.user._id,
+    });
+
+    const isHourValidated = validateHourValue(hour) && validateHourStatus(status);
+    const findDateInDatabase = await Availability.find(
+      { month, day },
+    );
+
+    const isDateInDatabase = findDateInDatabase.length;
+
     if (!isHourValidated) {
       return res.status(403).send({ error: 'hour value or status is invalid' });
     }
@@ -145,10 +150,9 @@ router.post('/availability', auth, async (req, res) => {
       return res.status(403).send({ error: 'date already in database' });
     }
 
-    // await availability.populate('author').execPopulate();
-    // console.log(availability);
+    await availability.populate('author').execPopulate();
     await availability.save();
-    res.status(201).send(availability);
+    res.status(201).send({ author: availability.author.name });
   } catch (e) {
     res.status(500).send();
   }
