@@ -5,13 +5,13 @@ const auth = require('../middleware/auth');
 const router = new express.Router();
 
 router.get('/users/me', auth, async (req, res) => {
-  res.send(req.user.getPublicProfile());
+  res.send(req.user);
 });
 
 router.get('/users/barbers', async (req, res) => {
   try {
-    const users = await User.find({ isBarber: true }, '_id name');
-    res.send(users);
+    const barbers = await User.find({ isBarber: true }, '_id name');
+    res.send(barbers);
   } catch (e) {
     res.status(500).send();
   }
@@ -43,7 +43,7 @@ router.post('/users/signup', async (req, res) => {
     const user = new User(body);
     await user.save();
     const token = await user.generateToken();
-    res.status(201).send({ user: user.getPublicProfile(), token });
+    res.status(201).send({ user, token });
   } catch (e) {
     res.status(500).send(e);
   }
@@ -56,7 +56,7 @@ router.post('/users/login', async (req, res) => {
     const user = await User.findByCredentials(email, password);
     const token = await user.generateToken();
 
-    res.send({ user: user.getPublicProfile(), token });
+    res.send({ user, token });
   } catch (e) {
     res.status(400).send();
   }
