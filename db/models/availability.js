@@ -29,20 +29,10 @@ const availabilitySchema = new mongoose.Schema({
     hour: {
       type: String,
       required: true,
-      validate(value) {
-        if (!validator.isInt(value, { min: 0, max: 1440 })) {
-          throw new Error('Hour is invalid');
-        }
-      },
     },
     status: {
       type: String,
       required: true,
-      validate(value) {
-        if (!['READY', 'OCCUPIED', 'DELETED'].some((element) => element === value)) {
-          throw new Error('Status is invalid');
-        }
-      },
     },
     clientName: String,
     serviceType: String,

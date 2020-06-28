@@ -5,7 +5,7 @@ const configurationSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  barbersCount: {
+  barberCount: {
     type: Number,
     required: true,
   },
