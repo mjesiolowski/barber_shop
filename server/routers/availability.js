@@ -33,7 +33,7 @@ router.get('/availability', async (req, res) => {
     const { month, day, author } = req.body;
 
     const findUserAvailability = await Availability.find(
-      { month, day, author: mongoose.Types.ObjectId(author) }, 'hours.status',
+      { month, day, author: mongoose.Types.ObjectId(author) }, 'hours.status hours.hour',
     );
 
     const isDataAvailable = findUserAvailability.length;
