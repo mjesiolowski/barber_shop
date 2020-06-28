@@ -1,8 +1,24 @@
 const mongoose = require('mongoose');
 
-const Configuration = mongoose.model('Configuration', {
-  barbersCount: Number,
-  maxBarbers: Number,
+const configurationSchema = new mongoose.Schema({
+  adminCount: {
+    type: Number,
+    required: true,
+  },
+  barberCount: {
+    type: Number,
+    required: true,
+  },
+  openingHour: {
+    type: Number,
+    required: true,
+  },
+  closingHour: {
+    type: Number,
+    required: true,
+  },
 });
+
+const Configuration = mongoose.model('Configuration', configurationSchema);
 
 module.exports = Configuration;

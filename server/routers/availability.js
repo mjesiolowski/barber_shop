@@ -80,20 +80,21 @@ router.patch('/availability/:id', async (req, res) => {
   try {
     const { hour: hourFromQuery, status: statusFromQuery } = req.body;
 
-    const availability = await Availability.findById(req.params.id);
-    const { day, month } = availability;
+    const isHourValidated = await validateHourValue(hourFromQuery) && validateHourStatus(statusFromQuery);
 
-    const isHourInDatabase = availability.hours.some(({ hour }) => hour === hourFromQuery);
-    const isHourStatusReady = Boolean(availability.hours.filter(({ hour, status }) => hour === hourFromQuery && status === 'READY').length);
-    const isHourValidated = validateHourValue(hourFromQuery) && validateHourStatus(statusFromQuery);
+    if (!isHourValidated) {
+      return res.status(403).send({ error: 'hour value or status is invalid' });
+    }
+
+    const availability = await Availability.findById(req.params.id);
 
     if (!availability) {
       return res.status(404).send({ error: 'availability not found' });
     }
 
-    if (!isHourValidated) {
-      return res.status(403).send({ error: 'hour value or status is invalid' });
-    }
+    const { day, month } = availability;
+
+    const isHourInDatabase = availability.hours.some(({ hour }) => hour === hourFromQuery);
 
     if (!isHourInDatabase) {
       const push = await availability.updateOne(
@@ -105,6 +106,8 @@ router.patch('/availability/:id', async (req, res) => {
 
       return res.status(201).send(push);
     }
+
+    const isHourStatusReady = Boolean(availability.hours.filter(({ hour, status }) => hour === hourFromQuery && status === 'READY').length);
 
     if (isHourStatusReady) {
       const update = await Availability.findOneAndUpdate(
@@ -130,25 +133,25 @@ router.post('/availability', auth, async (req, res) => {
     const { month, day, hours } = req.body;
     const { hour, status } = hours;
 
-    const availability = new Availability({
-      ...req.body,
-      author: req.user._id,
-    });
-
-    const isHourValidated = validateHourValue(hour) && validateHourStatus(status);
-    const findDateInDatabase = await Availability.find(
-      { month, day },
-    );
-
-    const isDateInDatabase = findDateInDatabase.length;
+    const isHourValidated = await validateHourValue(hour) && validateHourStatus(status);
 
     if (!isHourValidated) {
       return res.status(403).send({ error: 'hour value or status is invalid' });
     }
 
+    const findDateInDatabase = await Availability.find(
+      { month, day },
+    );
+    const isDateInDatabase = findDateInDatabase.length;
+
     if (isDateInDatabase) {
       return res.status(403).send({ error: 'date already in database' });
     }
+
+    const availability = new Availability({
+      ...req.body,
+      author: req.user._id,
+    });
 
     await availability.populate('author').execPopulate();
     await availability.save();

@@ -1,5 +1,6 @@
 const express = require('express');
 const User = require('../../db/models/user');
+const Configuration = require('../../db/models/configuration');
 const auth = require('../middleware/auth');
 
 const router = new express.Router();
@@ -21,22 +22,25 @@ router.post('/users/signup', async (req, res) => {
   try {
     const { body } = req;
     const { isAdmin, isBarber } = body;
+    const configuration = await Configuration.findOne({});
 
     if (isAdmin) {
       const findAdmins = await User.find({ isAdmin: true });
       const adminCount = findAdmins.length;
+      const maxAdminCount = configuration.adminCount;
 
-      if (adminCount === 1) {
-        return res.status(403).send({ error: 'maximum number of admins is 1' });
+      if (adminCount === maxAdminCount) {
+        return res.status(403).send({ error: `maximum number of admins is ${maxAdminCount}` });
       }
     }
 
     if (isBarber) {
       const findBarbers = await User.find({ isBarber: true });
       const barberCount = findBarbers.length;
+      const maxBarberCount = configuration.barberCount;
 
-      if (barberCount === 5) {
-        return res.status(403).send({ error: 'maximum number of admins is 5' });
+      if (barberCount === maxBarberCount) {
+        return res.status(403).send({ error: `maximum number of admins is ${maxBarberCount}` });
       }
     }
 
