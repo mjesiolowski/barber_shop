@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const availabilityRouter = require('./routers/availability');
 const userRouter = require('./routers/user');
+const configurationRouter = require('./routers/configuration');
 require('../db/mongoose');
 
 const app = express();
@@ -12,6 +13,7 @@ app.use(cors());
 app.use(express.json());
 app.use(userRouter);
 app.use(availabilityRouter);
+app.use(configurationRouter);
 app.use(express.static(publicPath));
 
 app.get('*', (req, res) => {
